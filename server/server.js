@@ -1,10 +1,10 @@
 const express = require('express');
-const bodyParser = require('body-parser');
 const usersRouter = require('./routes/users');
 // const postsRouter = require('./routes/posts'); // (בהמשך)
 
 const app = express();
-app.use(bodyParser.json());
+
+app.use(express.json());
 
 app.use('/users', usersRouter);
 // app.use('/posts', postsRouter); // (בהמשך)

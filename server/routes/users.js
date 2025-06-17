@@ -1,11 +1,23 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db.js');
+const db = require('../db');
 
-// GET all users
+// GET all users (optional filters via query)
 router.get('/', async (req, res) => {
   try {
-    const [rows] = await db.query('SELECT * FROM users');
+    let query = 'SELECT * FROM users';
+    const params = [];
+
+    if (Object.keys(req.query).length > 0) {
+      const conditions = [];
+      for (const key in req.query) {
+        conditions.push(`${key} = ?`);
+        params.push(req.query[key]);
+      }
+      query += ' WHERE ' + conditions.join(' AND ');
+    }
+
+    const [rows] = await db.query(query, params);
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -23,24 +35,35 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// POST create user
+// POST create new user
 router.post('/', async (req, res) => {
-  const { name, email } = req.body;
-  try {
-    const [result] = await db.query('INSERT INTO users (name, email) VALUES (?, ?)', [name, email]);
-    res.status(201).json({ id: result.insertId, name, email });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    console.log("BODY RECEIVED:", req.body); // הדפסה חשובה!
+    const { name, username, email, address, phone } = req.body;
+    if (!name || !username || !email || !address || !phone) {
+        return res.status(400).json({ error: 'All fields are required' });
+    }
+
+    try {
+        const [result] = await db.query(
+        'INSERT INTO users (name, username, email, address, phone) VALUES (?, ?, ?, ?, ?)',
+        [name, username, email, address, phone]
+        );
+        res.status(201).json({ id: result.insertId, name, username, email, address, phone });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // PUT update user
 router.put('/:id', async (req, res) => {
-  const { name, email } = req.body;
+  const { name, username, email, address, phone } = req.body;
   try {
-    const [result] = await db.query('UPDATE users SET name = ?, email = ? WHERE id = ?', [name, email, req.params.id]);
+    const [result] = await db.query(
+      'UPDATE users SET name = ?, username = ?, email = ?, address = ?, phone = ? WHERE id = ?',
+      [name, username, email, address, phone, req.params.id]
+    );
     if (result.affectedRows === 0) return res.status(404).json({ error: 'User not found' });
-    res.json({ id: req.params.id, name, email });
+    res.json({ id: req.params.id, name, username, email, address, phone });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
