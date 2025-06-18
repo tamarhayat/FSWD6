@@ -37,7 +37,7 @@ router.get('/:id', async (req, res) => {
 
 // POST create new user
 router.post('/', async (req, res) => {
-    console.log("BODY RECEIVED:", req.body); // הדפסה חשובה!
+    console.log("BODY RECEIVED:", req.body); 
     const { name, username, email, address, phone } = req.body;
     if (!name || !username || !email || !address || !phone) {
         return res.status(400).json({ error: 'All fields are required' });
