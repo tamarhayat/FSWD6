@@ -1,11 +1,15 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
-const Home = () => {
-    return (
-        <div>
-            home page
-        </div>
-    );
+export default function HomePage(){
+  const navigate = useNavigate();
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h2>Home Page</h2>
+      <button onClick={() => navigate('/todos')}>Todos</button>
+      <button onClick={() => navigate('/posts')}>Posts</button>
+    </div>
+  );
 };
 
-export default Home;
