@@ -25,7 +25,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage setUser={setUser} />} />
-        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/register" element={<RegisterPage setUser={setUser} />} />
         <Route path="/home" element={user ? <HomePage /> : <Navigate to="/login" />} />
         <Route path="/info" element={user ? <InfoPage /> : <Navigate to="/login" />} />
         <Route path="/todos" element={user ? <TodosPage /> : <Navigate to="/login" />} />
