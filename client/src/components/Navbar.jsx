@@ -19,7 +19,7 @@ export default function Navbar({ setUser }) {
         <button onClick={() => navigate('/info')}>Info</button>
       </div>
       <div>
-        {user && <span style={{ marginRight: '10px' }}>Hello {user.name}</span>}
+        {user && <span>Hello {user.name}</span>}
         <button onClick={handleLogout}> Logout</button>
       </div>
     </nav>

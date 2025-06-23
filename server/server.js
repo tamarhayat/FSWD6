@@ -5,6 +5,8 @@ const todosRouter = require('./routes/todos');
 const authRouter = require('./routes/auth');
 const app = express();
 
+
+//cors come to slove a problemmm - need to check if it needed!!!!!!!!!!!!!
 app.use(cors({
   origin: 'http://localhost:5173',
   credentials: true
@@ -14,8 +16,6 @@ app.use(express.json());
 app.use('/users', usersRouter);
 app.use('/todos', todosRouter);
 app.use('/', authRouter);
-
-
 // app.use('/posts', postsRouter); // (בהמשך)
 
 const PORT = 3000;
