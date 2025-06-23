@@ -8,6 +8,17 @@ router.get('/', async (req, res) => {
   res.json(rows);
 });
 
+// GET todo by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM todos WHERE id = ?', [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ error: 'Todo not found' });
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /todos
 router.post('/', async (req, res) => {
   const { userId, title, completed = false } = req.body;
