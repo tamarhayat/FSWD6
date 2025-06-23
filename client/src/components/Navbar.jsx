@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import '../App.css'; 
 export default function Navbar({ setUser }) {
   const navigate = useNavigate();
 
@@ -18,10 +18,12 @@ export default function Navbar({ setUser }) {
         <button onClick={() => navigate('/home')}> Home</button>
         <button onClick={() => navigate('/info')}>Info</button>
       </div>
+
+      
       <div>
-        {user && <span>Hello {user.name}</span>}
-        <button onClick={handleLogout}> Logout</button>
+      <button onClick={handleLogout}> Logout</button>
       </div>
+
     </nav>
   );
 };
