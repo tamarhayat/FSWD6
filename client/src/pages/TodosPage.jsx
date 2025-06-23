@@ -1,32 +1,52 @@
-import React, { useState, useEffect } from 'react';
-import { MdOutlineEdit, MdOutlineDelete } from "react-icons/md";
+import React, { useEffect, useState } from 'react';
+import { MdOutlineEdit, MdOutlineDelete } from 'react-icons/md';
 import '../style/todos.css';
 
-const TodoClient = () => {
+function TodoPage(){
   const [todos, setTodos] = useState([]);
+  const [filteredTodos, setFilteredTodos] = useState([]);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [currentUserId, setCurrentUserId] = useState(1);
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editingTodo, setEditingTodo] = useState(null);
   const [deletingTodo, setDeleteingTodo] = useState(null);
   const [todoForm, setTodoForm] = useState({ title: '', completed: false });
+  const [userId, setUserId] = useState(null);
 
   const API_URL = 'http://localhost:3000/todos';
 
   useEffect(() => {
-    loadTodos();
-  }, [currentUserId]);
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user) {
+      setUserId(user.id);
+      loadTodos(user.id);
+    }
+  }, []);
 
-  const loadTodos = async () => {
+  useEffect(() => {
+    let result = [...todos];
+    if (search.trim()) {
+      result = result.filter(todo =>
+        todo.title.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+    if (statusFilter !== 'all') {
+      result = result.filter(todo =>
+        statusFilter === 'completed' ? todo.completed : !todo.completed
+      );
+    }
+    setFilteredTodos(result);
+  }, [search, statusFilter, todos]);
+
+  const loadTodos = async (uid) => {
     setLoading(true);
     setError('');
-
     try {
-      const response = await fetch(`${API_URL}?userId=${currentUserId}`);
+      const response = await fetch(`${API_URL}?userId=${uid}`);
       if (!response.ok) throw new Error('Failed to fetch todos');
-
       const data = await response.json();
       setTodos(data);
     } catch (err) {
@@ -49,9 +69,11 @@ const TodoClient = () => {
   };
 
   const handleDeleteTodo = (todo) => {
+    console.log('Deleting todo:', todo);
     setDeleteingTodo(todo);
     setShowDeleteModal(true);
   };
+
 
   const saveTodo = async () => {
     if (!todoForm.title.trim()) {
@@ -61,44 +83,29 @@ const TodoClient = () => {
 
     try {
       let response;
-
       if (editingTodo) {
-        // Update existing todo
-        const updatedTodo = {
-          ...editingTodo,
-          title: todoForm.title,
-          completed: todoForm.completed
-        };
-
         response = await fetch(`${API_URL}/${editingTodo.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updatedTodo)
+          body: JSON.stringify(todoForm)
         });
-
         if (!response.ok) throw new Error('Failed to update todo');
 
-        setTodos(prev =>
-          prev.map(t => (t.id === editingTodo.id ? updatedTodo : t))
-        );
+        setTodos(prev => prev.map(t => t.id === editingTodo.id ? { ...t, ...todoForm } : t));
       } else {
-        // Create new todo
-        const newTodo = {
-          userId: currentUserId,
-          title: todoForm.title,
-          completed: todoForm.completed
-        };
-
         response = await fetch(API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newTodo)
+          body: JSON.stringify({
+            userId,
+            title: todoForm.title,
+            completed: todoForm.completed
+          })
         });
+        if (!response.ok) throw new Error('Failed to add todo');
 
-        if (!response.ok) throw new Error('Failed to create todo');
-
-        const createdTodo = await response.json();
-        setTodos(prev => [...prev, createdTodo]);
+        const created = await response.json();
+        setTodos(prev => [...prev, created]);
       }
 
       setShowModal(false);
@@ -113,10 +120,9 @@ const TodoClient = () => {
       const response = await fetch(`${API_URL}/${deletingTodo.id}`, {
         method: 'DELETE'
       });
-
       if (!response.ok) throw new Error('Failed to delete todo');
 
-      setTodos(prev => prev.filter(t => t.id !== deletingTodo.id));
+      setTodos(prev => prev.filter(todo => todo.id !== deletingTodo.id));
       setShowDeleteModal(false);
       setError('');
     } catch (err) {
@@ -127,7 +133,6 @@ const TodoClient = () => {
   const toggleComplete = async (todo, completed) => {
     try {
       const updatedTodo = { ...todo, completed };
-
       const response = await fetch(`${API_URL}/${todo.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -137,31 +142,43 @@ const TodoClient = () => {
       if (!response.ok) throw new Error('Failed to update todo');
 
       setTodos(prev =>
-        prev.map(t => (t.id === todo.id ? updatedTodo : t))
+        prev.map(t => (t.id === todo.id ? { ...t, completed } : t))
       );
     } catch (err) {
       setError('Error updating todo: ' + err.message);
     }
   };
 
-  const closeError = () => {
-    setError('');
-  };
-
   return (
     <div className="todo-container">
       <header className="todo-header">
         <h1>Todo Manager</h1>
+        <div className="todo-filters">
+            <input
+            className="user-input"
+            type="text"
+            placeholder="Search title..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            />
+            <select value={statusFilter} className="user-input" onChange={(e) => setStatusFilter(e.target.value)}>
+            <option value="all">All</option>
+            <option value="completed">Completed</option>
+            <option value="incomplete">Incomplete</option>
+            </select>
+        </div>
         <button onClick={handleAddTodo} className="btn btn-success">
           Add New Todo
         </button>
       </header>
 
+      
+
       <main className="todo-main">
         {error && (
           <div className="error-message">
             <span>{error}</span>
-            <button onClick={closeError} className="error-close">×</button>
+            <button onClick={() => setError('')} className="error-close">×</button>
           </div>
         )}
 
@@ -170,53 +187,43 @@ const TodoClient = () => {
             <div className="spinner"></div>
             <p>Loading todos...</p>
           </div>
-        ) : todos.length === 0 ? (
+        ) : filteredTodos.length === 0 ? (
           <div className="empty-state">
             <h3>No todos found</h3>
             <p>Create your first todo to get started!</p>
           </div>
         ) : (
-          <div className="todo-grid">
-            <div className="grid-body">
-              <div className="todo-cards-grid">
-                {todos.map(todo => (
-                  <div key={todo.id} className={`todo-card ${todo.completed ? 'completed' : ''}`}>
-                    <div className="todo-card-info">
-                      <label className="todo-checkbox">
-                        <input
-                          type="checkbox"
-                          checked={todo.completed}
-                          onChange={(e) => toggleComplete(todo, e.target.checked)}
-                        />
-                        <span className="checkmark"></span>
-                      </label>
-                      <h4 className={todo.completed ? 'completed-task' : ''}>
-                        {todo.title}
-                      </h4>
-                    </div>
-                    <div className="todo-card-actions">
-                      <button
-                        onClick={() => handleEditTodo(todo)}
-                        className="btn btn-sm btn-edit"
-                      >
-                        <MdOutlineEdit />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteTodo(todo)}
-                        className="btn btn-sm btn-delete"
-                      >
-                        <MdOutlineDelete />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+          <div className="todo-cards-grid">
+            {filteredTodos.map(todo => (
+              <div key={todo.id} className={`todo-card ${todo.completed ? 'completed' : ''}`}>
+                <div className="todo-card-info">
+                  <label className="todo-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={todo.completed}
+                      onChange={(e) => toggleComplete(todo, e.target.checked)}
+                    />
+                    <span className="checkmark"></span>
+                  </label>
+                  <h4 className={todo.completed ? 'completed-task' : ''}>{todo.title}</h4>
+                </div>
+                <div className="todo-card-actions">
+                  <button onClick={() => handleEditTodo(todo)} className="btn btn-sm btn-edit">
+                    <MdOutlineEdit />
+                  </button>
+                  <button onClick={() =>
+                            handleDeleteTodo(todo)
+                  }
+                          className="btn btn-sm btn-delete">
+                    <MdOutlineDelete />
+                  </button>
+                </div>
               </div>
-            </div>
+            ))}
           </div>
         )}
       </main>
 
-      {/* Modals stay unchanged */}
       {showModal && (
         <div className="modal" onClick={(e) => e.target.className === 'modal' && setShowModal(false)}>
           <div className="modal-content">
@@ -281,4 +288,4 @@ const TodoClient = () => {
   );
 };
 
-export default TodoClient;
+export default TodoPage;
